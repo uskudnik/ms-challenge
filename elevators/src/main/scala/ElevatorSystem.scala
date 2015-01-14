@@ -3,7 +3,7 @@
 import scala.collection.mutable
 
 class PickUpQueue {
-  type PickupRequest = (Int, Int)
+  type PickupRequest = (Int, Int, Int)
 
   def nonEmpty: Boolean = queue.nonEmpty
   def isEmpty: Boolean = queue.isEmpty
@@ -54,8 +54,6 @@ case class Elevator(id: Int, var current: Int, var goal: Int, queue: ElevatorQue
     else Stop
   }
   
-//  def toFloor(floor: Int) =
-
   def isBusy: Boolean = current != goal && queue.nonEmpty
   def isIdle: Boolean = current == goal && queue.isEmpty
   
@@ -78,16 +76,15 @@ class ElevatorControlSystem(val numElevators: Int) {
   def getElevator(id: Int): Elevator = elevators(id)
   
   def status: Seq[(Int, Int, Int)] = elevators.map(elv => (elv.id, elv.current, elv.goal))
-  def pickup(pfloor: Int, direction: Int) = pickupQueue.enqueue((pfloor, direction))
+  def pickup(pfloor: Int, direction: Int) = pickupQueue.enqueue((pfloor, direction, stepNum))
   def update(id: Int, current: Int, goal: Int) = {}
   def step() = {
     stepNum = stepNum + 1
 
     while (idleElevators.nonEmpty && pickupQueue.nonEmpty) {
-      val (pfloor, dir) = pickupQueue.dequeue()
+      val (pfloor, dir, reqtime) = pickupQueue.dequeue()
       val idles = idleElevators.sortBy(_.pickUpCost(pfloor))
       val elv = idles.head
-      println(pickupQueue.length + " queue: " + pickupQueue + "; idles: " + idles + ", top: " + elv)
       elv.goal = pfloor
     }
     

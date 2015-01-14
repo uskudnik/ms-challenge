@@ -22,6 +22,9 @@ class ElevatorSystemSuite extends FunSuite {
     def status() = {
       println("\nStep:    " + elv1.getStep)
       println("---- ---- ---- ----")
+      println("Queue 1:    " + elv1.pickupQueue.toList)
+      println("Queue 2:    " + elv2.pickupQueue.toList)
+      println("---- ---- ---- ----")
       println("Elevator system 1:    " + elv1.status.toList)
       println("Elevator system 2:    " + elv2.status.toList)
       println("---- ---- ---- ----")
@@ -44,8 +47,8 @@ class ElevatorSystemSuite extends FunSuite {
         assert(elv1.status.toList == List((1, 0, 0)))
         assert(elv2.status.toList == List((1,0,0), (2,0,0)))
 
-        assert(elv1.pickupQueue.toList == List((2,-1)))
-        assert(elv2.pickupQueue.toList == List((1, 1), (3, -1)))
+        assert(elv1.pickupQueue.toList == List((2,-1, 0)))
+        assert(elv2.pickupQueue.toList == List((1, 1, 0), (3, -1, 0)))
       
       // First step, elevators should move one step to their final destination
       step()
@@ -63,8 +66,6 @@ class ElevatorSystemSuite extends FunSuite {
       step()
       assert(elv1.status.toList == List((1, 2, 2)))
       assert(elv2.status.toList == List((1,1, 1), (2,3,3)))
-      
-      status()
     }
   }
 
@@ -75,26 +76,38 @@ class ElevatorSystemSuite extends FunSuite {
       elv2.pickup(3, -1)
       elv2.pickup(5, 1)
       
-      assert(elv2.pickupQueue.toList == List((1, 1), (3, -1), (5, 1)))
+      assert(elv2.pickupQueue.toList == List((1, 1, 0), (3, -1, 0), (5, 1, 0)))
       
       step() // 1
       
-      assert(elv2.pickupQueue.toList == List((5, 1)))
-      elv2.pickup(2, 1)
-      assert(elv2.pickupQueue.toList == List((5, 1), (2, 1)))
-
+      assert(elv2.pickupQueue.toList == List((5, 1, 0)))
+      elv2.pickup(1, 1)
+      assert(elv2.pickupQueue.toList == List((5, 1, 0), (1, 1, 1)))
+      status()
+      step() // 2
+      assert(elv2.pickupQueue.toList == List((1, 1, 1)))
+      step() // 3
+      step() // 4
+      assert(elv2.pickupQueue.toList == List())
+      step() // 5
+      assert(elv2.status.toList == List((1,5, 5), (2,1,1)))
     }
   }
-
-  //  test("One person pickup and go-to") {
-//    new ElevatorSystemSetUp {
-//      elv1.pickup(0, 1)
-//      elv1.step()
-//      elv1.update(4)
-//      elv1.step()
-//      elv1.step()
-//      elv1.step()
-//      println(elv1.status)
-//    }
-//  }
+  
+  test("Load balancing considering distance") {
+    new ElevatorSystemSetUp {
+      elv2.pickup(1, 1)
+      elv2.pickup(10, 1)
+      (1 to 10).map(x => step())
+      assert(elv2.status.toList == List((1,1, 1), (2,10,10)))
+      elv2.pickup(3, -1)
+      step()
+      assert(elv2.status.toList == List((1,2, 3), (2,10,10)))
+      step()
+      assert(elv2.status.toList == List((1,3, 3), (2,10,10)))
+      elv2.pickup(7, -1)
+      step()
+      assert(elv2.status.toList == List((1,3, 3), (2,9,7)))
+    }
+  }
 }
